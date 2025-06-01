@@ -142,10 +142,10 @@ export default function Home() {
           <h1 className="text-2xl font-bold">Web3 Todo</h1>
           <h2 className="text-sm text-muted-foreground">Gerencie suas tarefas com Web3</h2>
         </div>
-        <Button>
+        {/* <Button>
           <WalletIcon />
           Conectar Wallet 
-        </Button>
+        </Button> */}
       </div>
       <div className="grid grid-cols-4 gap-4">
         <StatusCard title="Total de Tarefas" amount={taskCount} />
@@ -159,7 +159,7 @@ export default function Home() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => {
+            <Button className="cursor-pointer" onClick={() => {
               setIsDialogOpen(true);
               // Reset form com valores padrão válidos
               setFormData({
@@ -169,6 +169,7 @@ export default function Home() {
                 priority: 0,
                 value: '100000'
               });
+
             }}>
               <PlusIcon />
               Nova Tarefa
@@ -235,7 +236,7 @@ export default function Home() {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleCreateTask}>
+              <Button className="cursor-pointer" onClick={handleCreateTask}>
                 Salvar
               </Button>
             </DialogFooter>

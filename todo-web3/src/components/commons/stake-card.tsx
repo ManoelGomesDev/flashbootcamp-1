@@ -1,8 +1,6 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { Button } from "../ui/button";
 
 interface StakeCardProps {
     option: string;
@@ -12,15 +10,6 @@ interface StakeCardProps {
 }
 
 export function StakeCard({ option, stake, onSelect, selected = false }: StakeCardProps) {
-
-    const [selectedOption, setSelectedOption] = useState<string>('fazer agora');
-    const [stakeValue, setStakeValue] = useState<number>(0.1);
-
-    const handleOptionSelect = (option: string, stake: number) => {
-        setSelectedOption(option);
-        setStakeValue(stake);
-      };
-
     const getStakeValue = (option: string): string => {
         switch (option) {
             case 'fazer agora': return '100000';
@@ -35,80 +24,52 @@ export function StakeCard({ option, stake, onSelect, selected = false }: StakeCa
         onSelect(option, getStakeValue(option));
     };
 
-    switch (option) {
-        case 'fazer agora':
-            return <Button 
-                variant="default" 
-                className={`cursor-pointer text-red-500 ${
-                    selected ? 'bg-red-500/30' : 'bg-red-500/10 hover:bg-red-500/20'
-                }`} 
-                onClick={handleClick}
-            >
-                <p className="text-sm text-muted-foreground">Stake:</p>
-                <p className="text-primary font-bold">{stake} ETH</p>
-                Fazer Agora
-            </Button>
-        case 'agendar':
-            return <Button 
-                variant="default" 
-                className={`cursor-pointer text-blue-500 ${
-                    selected ? 'bg-blue-500/30' : 'bg-blue-500/10 hover:bg-blue-500/20'
-                }`}
-                onClick={handleClick}
-            >
-                <p className="text-sm text-muted-foreground">Stake:</p>
-                <p className="text-primary font-bold">{stake} ETH</p>
-                Agendar
-            </Button>
-        case 'delegar':
-            return <Button 
-                variant="default" 
-                className={`cursor-pointer text-yellow-500 ${
-                    selected ? 'bg-yellow-500/30' : 'bg-yellow-500/10 hover:bg-yellow-500/20'
-                }`}
-                onClick={handleClick}
-            >
-                <p className="text-sm text-muted-foreground">Stake:</p>
-                <p className="text-primary font-bold">{stake} ETH</p>
-                Delegar
-            </Button>
-        case 'eliminar':
-            return <Button 
-                variant="default" 
-                className={`cursor-pointer text-black ${
-                    selected ? 'bg-black/30' : 'bg-black/10 hover:bg-black/20'
-                }`}
-                onClick={handleClick}
-            >
-                <p className="text-sm text-muted-foreground">Stake:</p>
-                <p className="text-primary font-bold">{stake} ETH</p>
-                Eliminar
-            </Button>
-    }
+    // Configuração de cores para cada opção
+    const getCardStyle = (option: string, selected: boolean) => {
+        const baseClasses = "cursor-pointer flex flex-col items-center justify-center p-4 min-h-[100px] gap-2 rounded-lg border-2 transition-all duration-200 transform hover:scale-105";
+        
+        switch (option) {
+            case 'fazer agora':
+                return `${baseClasses} text-red-600 ${
+                    selected 
+                        ? 'bg-red-100 border-red-400 shadow-lg' 
+                        : 'bg-red-50 hover:bg-red-100 border-red-200 hover:border-red-300 hover:shadow-md'
+                }`;
+            case 'agendar':
+                return `${baseClasses} text-blue-600 ${
+                    selected 
+                        ? 'bg-blue-100 border-blue-400 shadow-lg' 
+                        : 'bg-blue-50 hover:bg-blue-100 border-blue-200 hover:border-blue-300 hover:shadow-md'
+                }`;
+            case 'delegar':
+                return `${baseClasses} text-yellow-600 ${
+                    selected 
+                        ? 'bg-yellow-100 border-yellow-400 shadow-lg' 
+                        : 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 hover:border-yellow-300 hover:shadow-md'
+                }`;
+            case 'eliminar':
+                return `${baseClasses} text-gray-600 ${
+                    selected 
+                        ? 'bg-gray-100 border-gray-400 shadow-lg' 
+                        : 'bg-gray-50 hover:bg-gray-100 border-gray-200 hover:border-gray-300 hover:shadow-md'
+                }`;
+            default:
+                return `${baseClasses} text-gray-600 bg-gray-50 hover:bg-gray-100 border-gray-200`;
+        }
+    };
 
     return (
-        <div
-        onClick={() => handleOptionSelect('fazer agora', 0.1)}
-        className={`cursor-pointer rounded-xl border ${
-          selectedOption === 'fazer agora' ? 'border-primary' : ''
-        }`}
-      >
-        <label className="flex flex-col items-center justify-between p-4">
-          <div className="flex items-center gap-2">
-            <div className={`w-4 h-4 border rounded-full flex items-center justify-center ${
-              selectedOption === 'fazer agora' ? 'bg-primary' : ''
-            }`}>
-              <div className={`w-2 h-2 rounded-full bg-white ${
-                selectedOption === 'fazer agora' ? 'block' : 'hidden'
-              }`} />
+        <div 
+            className={getCardStyle(option, selected)}
+            onClick={handleClick}
+        >
+            <div className="text-center">
+                <p className="text-xs text-gray-500 mb-1">Stake:</p>
+                <p className="font-bold text-sm">{stake} ETH</p>
             </div>
-            {option}
-          </div>
-          <div className="text-center mt-4">
-            <p className="text-sm text-muted-foreground">Stake:</p>
-            <p className="text-primary font-bold">{stake} ETH</p>
-          </div>
-        </label>
-      </div>
-    )
+            <div className="font-medium text-sm capitalize">
+                {option}
+            </div>
+        </div>
+    );
 }
