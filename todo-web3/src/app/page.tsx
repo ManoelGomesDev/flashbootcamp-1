@@ -11,9 +11,11 @@ import { PlusIcon, WalletIcon, CheckIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { taskService, type Task, type CreateTaskDTO } from "@/services/api";
 import { useWallet } from "@/hooks/useWallet";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export default function Home() {
   const wallet = useWallet();
+  const notify = useNotifications();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskCount, setTaskCount] = useState(0);
   const [completedTasks, setCompletedTasks] = useState(0);
@@ -70,44 +72,50 @@ export default function Home() {
       
     } catch (error) {
       console.error('Error loading tasks:', error);
+      notify.error('Erro ao carregar tarefas', 'Não foi possível carregar as tarefas');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateTask = async () => {
+    // Verificar se carteira está conectada
+    if (!wallet.isClient || !wallet.isConnected) {
+      notify.warning('Carteira não conectada', 'Por favor, conecte sua carteira primeiro');
+      return;
+    }
+
+    // Validações
+    if (!formData.title || !formData.description || !formData.dueDate) {
+      notify.error('Campos obrigatórios', 'Por favor, preencha todos os campos');
+      return;
+    }
+
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    if (formData.dueDate <= currentTimestamp) {
+      notify.error('Data inválida', 'A data de vencimento deve estar no futuro');
+      return;
+    }
+
+    // Validar se um valor válido foi selecionado
+    const validValues = ['100000', '50000', '10000', '1000'];
+    if (!validValues.includes(formData.value)) {
+      notify.error('Stake inválido', 'Por favor, selecione uma opção de stake válida');
+      return;
+    }
+
     try {
-      // Verificar se carteira está conectada
-      if (!wallet.isClient || !wallet.isConnected) {
-        alert('Por favor, conecte sua carteira primeiro');
-        return;
-      }
+      const createPromise = taskService.createTask(formData);
+      
+      await notify.promise(createPromise, {
+        loading: 'Criando tarefa...',
+        success: 'Tarefa criada com sucesso!',
+        error: 'Erro ao criar tarefa'
+      });
 
-      // Validações
-      if (!formData.title || !formData.description || !formData.dueDate) {
-        alert('Por favor, preencha todos os campos');
-        return;
-      }
-
-      const currentTimestamp = Math.floor(Date.now() / 1000);
-      if (formData.dueDate <= currentTimestamp) {
-        alert('A data de vencimento deve estar no futuro');
-        return;
-      }
-
-      // Validar se um valor válido foi selecionado
-      const validValues = ['100000', '50000', '10000', '1000'];
-      if (!validValues.includes(formData.value)) {
-        alert('Por favor, selecione uma opção de stake válida');
-        return;
-      }
-
-      // Debug: mostrar valores que serão enviados
-      console.log('Dados que serão enviados:', formData);
-
-      await taskService.createTask(formData);
       await loadTasks();
       setIsDialogOpen(false);
+      
       // Reset form
       setFormData({
         title: '',
@@ -116,24 +124,40 @@ export default function Home() {
         priority: 0,
         value: '100000'
       });
+
+      notify.taskCreated(formData.title);
+      
     } catch (error: any) {
       console.error('Error creating task:', error);
-      alert(error.response?.data?.message || 'Erro ao criar tarefa');
+      notify.contractError(error.response?.data?.message);
     }
   };
 
   const handleCompleteTask = async (id: number) => {
+    if (!canCreateTask()) {
+      notify.warning('Carteira não conectada', 'Por favor, conecte sua carteira primeiro');
+      return;
+    }
+
     try {
-      if (!canCreateTask()) {
-        alert('Por favor, conecte sua carteira primeiro');
-        return;
+      const task = tasks.find(t => t.id === id);
+      const completePromise = taskService.completeTask(id);
+      
+      await notify.promise(completePromise, {
+        loading: 'Completando tarefa...',
+        success: 'Tarefa completada! Stake recuperado',
+        error: 'Erro ao completar tarefa'
+      });
+
+      await loadTasks();
+      
+      if (task) {
+        notify.taskCompleted(task.title);
       }
       
-      await taskService.completeTask(id);
-      await loadTasks();
     } catch (error) {
       console.error('Error completing task:', error);
-      alert('Erro ao completar tarefa. Tente novamente.');
+      notify.contractError('Erro ao completar tarefa. Tente novamente.');
     }
   };
 
@@ -171,7 +195,10 @@ export default function Home() {
     if (!wallet.isMetaMaskInstalled) {
       return (
         <Button 
-          onClick={() => window.open('https://metamask.io/', '_blank')}
+          onClick={() => {
+            notify.info('Redirecionando...', 'Você será redirecionado para instalar o MetaMask');
+            setTimeout(() => window.open('https://metamask.io/', '_blank'), 1000);
+          }}
           className="bg-orange-500 hover:bg-orange-600 cursor-pointer"
         >
           <WalletIcon />
@@ -192,10 +219,7 @@ export default function Home() {
     if (wallet.isConnected) {
       return (
         <Button 
-          onClick={() => {
-            wallet.disconnectWallet();
-            alert('Carteira desconectada com sucesso!');
-          }}
+          onClick={wallet.disconnectWallet}
           className="bg-green-500 hover:bg-green-600 gap-2"
           title="Clique para desconectar a carteira"
         >
@@ -264,7 +288,7 @@ export default function Home() {
               className={`cursor-pointer ${!canCreateTask() ? 'opacity-50 cursor-not-allowed' : ''}`} 
               onClick={() => {
                 if (!canCreateTask()) {
-                  alert('Por favor, conecte sua carteira primeiro');
+                  notify.warning('Carteira necessária', 'Por favor, conecte sua carteira primeiro');
                   return;
                 }
                 
@@ -357,7 +381,10 @@ export default function Home() {
       </div>
       <div className="flex flex-col gap-4 mt-4 max-h-[600px] overflow-y-auto border-2 border-gray-200 rounded-md p-4">
         {loading ? (
-          <p>Carregando...</p>
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <span className="ml-2">Carregando tarefas...</span>
+          </div>
         ) : tasks.length > 0 ? (
           tasks.map((task) => {
             // Mapear prioridade para valores amigáveis em ETH
@@ -383,8 +410,11 @@ export default function Home() {
             );
           })
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 items-center justify-center p-8">
             <p className="text-muted-foreground">Nenhuma tarefa encontrada</p>
+            <p className="text-sm text-muted-foreground">
+              Crie sua primeira tarefa para começar a usar o Web3 Todo!
+            </p>
           </div>
         )}
       </div>
