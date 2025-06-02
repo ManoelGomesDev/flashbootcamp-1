@@ -51,13 +51,13 @@ class CreateTaskRequest {
 
   @ApiProperty({
     description: 'Valor em wei para a tarefa',
-    example: '100000',
+    example: '100',
     required: true,
     type: String,
-    enum: ['100000', '50000', '10000', '1000']
+    enum: ['100', '50', '25', '10']
   })
   @IsString()
-  @IsIn(['100000', '50000', '10000', '1000'])
+  @IsIn(['100', '50', '25', '10'])
   value: string;
 }
 
@@ -125,7 +125,7 @@ export class AppController {
           description: "Implementar sistema de autenticação usando JWT",
           dueDate: 1777777777,
           priority: 0,
-          value: "100000"
+          value: "100"
         },
         summary: "Exemplo de criação de tarefa"
       }
@@ -160,10 +160,10 @@ export class AppController {
         );
       }
 
-      const validValues = ['100000', '50000', '10000', '1000'];
+      const validValues = ['100', '50', '25', '10'];
       if (!validValues.includes(body.value)) {
         throw new HttpException(
-          'Valor inválido para a prioridade. Valores permitidos: 100000, 50000, 10000, 1000',
+          'Valor inválido para a prioridade. Valores permitidos: 100, 50, 25, 10',
           HttpStatus.BAD_REQUEST,
         );
       }

@@ -48,13 +48,17 @@ export default function Home() {
         taskService.getTasks(),
         taskService.getTaskCount()
       ]);
-      setTasks(tasksData);
+      
+      // Ordenar tarefas por ID decrescente (mais recentes primeiro)
+      const sortedTasks = tasksData.sort((a, b) => a.priority - b.priority);
+      
+      setTasks(sortedTasks);
       setTaskCount(count);
-      const completed = tasksData.filter(task => task.isCompleted).length;
+      const completed = sortedTasks.filter(task => task.isCompleted).length;
       setCompletedTasks(completed);
       
       // Calcular total em Wei das tarefas não concluídas
-      const uncompletedTasks = tasksData.filter(task => !task.isCompleted);
+      const uncompletedTasks = sortedTasks.filter(task => !task.isCompleted);
       const totalStake = uncompletedTasks.reduce((total, task) => {
         // Mapear prioridade para valores corretos em Wei
         const getWeiFromPriority = (priority: number): number => {
@@ -106,15 +110,16 @@ export default function Home() {
     }
 
     try {
-      const createPromise = taskService.createTask(formData);
+      // Adicionar loading para criação
+      setLoading(true);
       
-      await notify.promise(createPromise, {
-        loading: 'Criando tarefa...',
-        success: 'Tarefa criada com sucesso!',
-        error: 'Erro ao criar tarefa'
-      });
-
-      await loadTasks();
+      console.log('Criando tarefa:', formData);
+      await taskService.createTask(formData);
+      
+      console.log('Tarefa criada, recarregando lista...');
+      notify.success('Tarefa criada!', 'Tarefa criada com sucesso');
+      
+      // Fechar dialog primeiro
       setIsDialogOpen(false);
       
       // Reset form
@@ -126,11 +131,26 @@ export default function Home() {
         value: '100'
       });
 
-      notify.taskCreated(formData.title);
+      // Recarregar lista com delay para garantir que o backend processou
+      setTimeout(async () => {
+        try {
+          await loadTasks();
+          console.log('Lista recarregada com sucesso');
+          notify.taskCreated(formData.title);
+        } catch (error) {
+          console.error('Erro ao recarregar lista:', error);
+          notify.error('Erro', 'Erro ao atualizar lista de tarefas');
+          
+          // Tentar recarregar novamente após 2 segundos
+          setTimeout(() => loadTasks(), 2000);
+        }
+      }, 500); // Delay de 500ms
       
     } catch (error: any) {
       console.error('Error creating task:', error);
-      notify.contractError(error.response?.data?.message);
+      notify.contractError(error.response?.data?.message || error.message);
+    } finally {
+      setLoading(false);
     }
   };
 

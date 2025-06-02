@@ -16,10 +16,10 @@ contract TodoList {
     mapping(uint => uint) public taskToAmount;
 
     uint[4] public priorityLevels = [
-        100000 wei,
-        50000 wei,
-        10000 wei,
-        1000 wei
+        100 wei,    // Alta
+        50 wei,     // Media
+        25 wei,     // Baixa
+        10 wei      // Muito baixa
         ];
 
     event TaskCreated(

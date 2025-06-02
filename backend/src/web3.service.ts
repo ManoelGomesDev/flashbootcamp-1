@@ -95,11 +95,11 @@ export class Web3Service {
       // Mapear prioridade para valor
       const getValueFromPriority = (priority: number): string => {
         switch (priority) {
-          case 0: return '100000';
-          case 1: return '50000';
-          case 2: return '10000';
-          case 3: return '1000';
-          default: return '100000';
+          case 0: return '100';  // Alta
+          case 1: return '50';   // Media
+          case 2: return '25';   // Baixa
+          case 3: return '10';   // Muito baixa
+          default: return '100';
         }
       };
 
