@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusIcon, WalletIcon } from "lucide-react";
+import { PlusIcon, WalletIcon, CheckIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { taskService, type Task, type CreateTaskDTO } from "@/services/api";
+import { useWallet } from "@/hooks/useWallet";
 
 export default function Home() {
+  const wallet = useWallet();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskCount, setTaskCount] = useState(0);
   const [completedTasks, setCompletedTasks] = useState(0);
@@ -29,6 +31,13 @@ export default function Home() {
   useEffect(() => {
     loadTasks();
   }, []);
+
+  // Mostrar erro da carteira se houver
+  useEffect(() => {
+    if (wallet.error) {
+      alert(wallet.error);
+    }
+  }, [wallet.error]);
 
   const loadTasks = async () => {
     try {
@@ -68,6 +77,12 @@ export default function Home() {
 
   const handleCreateTask = async () => {
     try {
+      // Verificar se carteira está conectada
+      if (!wallet.isClient || !wallet.isConnected) {
+        alert('Por favor, conecte sua carteira primeiro');
+        return;
+      }
+
       // Validações
       if (!formData.title || !formData.description || !formData.dueDate) {
         alert('Por favor, preencha todos os campos');
@@ -109,6 +124,11 @@ export default function Home() {
 
   const handleCompleteTask = async (id: number) => {
     try {
+      if (!wallet.isClient || !wallet.isConnected) {
+        alert('Por favor, conecte sua carteira primeiro');
+        return;
+      }
+      
       await taskService.completeTask(id);
       await loadTasks();
     } catch (error) {
@@ -135,6 +155,60 @@ export default function Home() {
     setFormData(prev => ({ ...prev, value, priority }));
   };
 
+  // Renderizar botão da carteira
+  const renderWalletButton = () => {
+    // Mostrar botão padrão durante hidratação
+    if (!wallet.isClient) {
+      return (
+        <Button disabled>
+          <WalletIcon />
+          Conectar Wallet
+        </Button>
+      );
+    }
+
+    if (!wallet.isMetaMaskInstalled) {
+      return (
+        <Button 
+          onClick={() => window.open('https://metamask.io/', '_blank')}
+          className="bg-orange-500 hover:bg-orange-600"
+        >
+          <WalletIcon />
+          Instalar MetaMask
+        </Button>
+      );
+    }
+
+    if (wallet.isLoading) {
+      return (
+        <Button disabled>
+          <WalletIcon className="animate-spin" />
+          Conectando...
+        </Button>
+      );
+    }
+
+    if (wallet.isConnected) {
+      return (
+        <Button 
+          onClick={wallet.disconnectWallet}
+          className="bg-green-500 hover:bg-green-600 gap-2"
+        >
+          <CheckIcon size={16} />
+          <span className="font-mono text-sm">{wallet.formatAddress}</span>
+          <XIcon size={14} className="ml-1" />
+        </Button>
+      );
+    }
+
+    return (
+      <Button onClick={wallet.connectWallet}>
+        <WalletIcon />
+        Conectar Wallet
+      </Button>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4 max-w-7xl mx-auto pt-10">
       <div className="flex justify-between items-center">
@@ -142,11 +216,18 @@ export default function Home() {
           <h1 className="text-2xl font-bold">Web3 Todo</h1>
           <h2 className="text-sm text-muted-foreground">Gerencie suas tarefas com Web3</h2>
         </div>
-        {/* <Button>
-          <WalletIcon />
-          Conectar Wallet 
-        </Button> */}
+        {renderWalletButton()}
       </div>
+
+      {/* Status de conexão */}
+      {wallet.isClient && wallet.isConnected && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <p className="text-green-700 text-sm">
+            ✅ Carteira conectada: <span className="font-mono">{wallet.address}</span>
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-4 gap-4">
         <StatusCard title="Total de Tarefas" amount={taskCount} />
         <StatusCard title="Tarefas Concluídas" amount={completedTasks} />
@@ -159,18 +240,25 @@ export default function Home() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="cursor-pointer" onClick={() => {
-              setIsDialogOpen(true);
-              // Reset form com valores padrão válidos
-              setFormData({
-                title: '',
-                description: '',
-                dueDate: 0,
-                priority: 0,
-                value: '100000'
-              });
-
-            }}>
+            <Button 
+              className="cursor-pointer" 
+              onClick={() => {
+                if (!wallet.isClient || !wallet.isConnected) {
+                  alert('Por favor, conecte sua carteira primeiro');
+                  return;
+                }
+                
+                setIsDialogOpen(true);
+                // Reset form com valores padrão válidos
+                setFormData({
+                  title: '',
+                  description: '',
+                  dueDate: 0,
+                  priority: 0,
+                  value: '100000'
+                });
+              }}
+            >
               <PlusIcon />
               Nova Tarefa
             </Button>
