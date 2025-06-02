@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { taskService, type Task, type CreateTaskDTO } from "@/services/api";
 import { useWallet } from "@/hooks/useWallet";
 import { useNotifications } from "@/hooks/useNotifications";
+import { Label } from "@/components/ui/label";
 
 export default function Home() {
   const wallet = useWallet();
@@ -27,7 +28,7 @@ export default function Home() {
     description: '',
     dueDate: 0,
     priority: 0,
-    value: '100000'
+    value: '100'
   });
 
   useEffect(() => {
@@ -52,21 +53,21 @@ export default function Home() {
       const completed = tasksData.filter(task => task.isCompleted).length;
       setCompletedTasks(completed);
       
-      // Calcular total em ETH das tarefas não concluídas
+      // Calcular total em Wei das tarefas não concluídas
       const uncompletedTasks = tasksData.filter(task => !task.isCompleted);
       const totalStake = uncompletedTasks.reduce((total, task) => {
-        // Mapear prioridade para valores corretos em ETH
-        const getEthFromPriority = (priority: number): number => {
+        // Mapear prioridade para valores corretos em Wei
+        const getWeiFromPriority = (priority: number): number => {
           switch (priority) {
-            case 0: return 0.1;   // fazer agora - 100000 wei
-            case 1: return 0.05;  // agendar - 50000 wei  
-            case 2: return 0.00001;  // delegar - 10000 wei
-            case 3: return 0.001;  // eliminar - 1000 wei
-            default: return 0.1;
+            case 0: return 100;  // Alta - 100 wei
+            case 1: return 50;   // Media - 50 wei  
+            case 2: return 25;   // Baixa - 25 wei
+            case 3: return 10;   // Muito baixa - 10 wei
+            default: return 100;
           }
         };
         
-        return total + getEthFromPriority(task.priority);
+        return total + getWeiFromPriority(task.priority);
       }, 0);
       setTotalStakeInCustody(totalStake);
       
@@ -98,7 +99,7 @@ export default function Home() {
     }
 
     // Validar se um valor válido foi selecionado
-    const validValues = ['100000', '50000', '10000', '1000'];
+    const validValues = ['100', '50', '25', '10'];
     if (!validValues.includes(formData.value)) {
       notify.error('Stake inválido', 'Por favor, selecione uma opção de stake válida');
       return;
@@ -122,7 +123,7 @@ export default function Home() {
         description: '',
         dueDate: 0,
         priority: 0,
-        value: '100000'
+        value: '100'
       });
 
       notify.taskCreated(formData.title);
@@ -164,16 +165,16 @@ export default function Home() {
   const handleStakeSelect = (option: string, value: string) => {
     let priority = 0;
     switch (option) {
-      case 'fazer agora':
+      case 'alta':
         priority = 0;
         break;
-      case 'agendar':
+      case 'media':
         priority = 1;
         break;
-      case 'delegar':
+      case 'baixa':
         priority = 2;
         break;
-      case 'eliminar':
+      case 'muito baixa':
         priority = 3;
         break;
     }
@@ -275,7 +276,7 @@ export default function Home() {
         <StatusCard title="Total de Tarefas" amount={taskCount} />
         <StatusCard title="Tarefas Concluídas" amount={completedTasks} />
         <StatusCard title="Tarefas Pendentes" amount={taskCount - completedTasks} />
-        <StatusCard title="ETH em Stake" amount={parseFloat(totalStakeInCustody.toFixed(6))} />
+        <StatusCard title="Wei em Stake" amount={totalStakeInCustody} />
       </div>
       <div className="flex justify-between items-center">
         <div>
@@ -299,7 +300,7 @@ export default function Home() {
                   description: '',
                   dueDate: 0,
                   priority: 0,
-                  value: '100000'
+                  value: '100'
                 });
               }}
               title={!canCreateTask() ? 'Conecte sua carteira para criar tarefas' : 'Criar nova tarefa'}
@@ -316,17 +317,20 @@ export default function Home() {
               <DialogTitle>Nova Tarefa</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-4">
+              <Label>Título</Label>
               <Input 
                 type="text" 
                 placeholder="Título" 
                 value={formData.title}
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
               />
+              <Label>Descrição</Label>
               <Textarea 
                 placeholder="Descrição" 
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
               />
+              <Label>Data de vencimento</Label>
               <Input 
                 type="datetime-local" 
                 placeholder="Data de vencimento"
@@ -335,37 +339,38 @@ export default function Home() {
                   setFormData({...formData, dueDate: Math.floor(date.getTime() / 1000)});
                 }}
               />
+
               <div className="mb-2">
                 <p className="text-sm font-medium mb-2">Selecione o nível de prioridade:</p>
                 <p className="text-xs text-muted-foreground">
-                  Selecionado: {formData.priority === 0 ? 'Fazer Agora' : 
-                              formData.priority === 1 ? 'Agendar' :
-                              formData.priority === 2 ? 'Delegar' : 'Eliminar'} 
+                  Selecionado: {formData.priority === 0 ? 'Alta' : 
+                              formData.priority === 1 ? 'Media' :
+                              formData.priority === 2 ? 'Baixa' : 'Muito baixa'} 
                   ({formData.value} wei)
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <StakeCard 
-                  option="fazer agora" 
-                  stake={0.1} 
+                  option="alta" 
+                  stake={100} 
                   onSelect={handleStakeSelect}
                   selected={formData.priority === 0}
                 />
                 <StakeCard 
-                  option="agendar" 
-                  stake={0.05} 
+                  option="media" 
+                  stake={50} 
                   onSelect={handleStakeSelect}
                   selected={formData.priority === 1}
                 />
                 <StakeCard 
-                  option="delegar" 
-                  stake={0.00001}
+                  option="baixa" 
+                  stake={25}
                   onSelect={handleStakeSelect}
                   selected={formData.priority === 2}
                 />
                 <StakeCard 
-                  option="eliminar" 
-                  stake={0.001} 
+                  option="muito baixa" 
+                  stake={10} 
                   onSelect={handleStakeSelect}
                   selected={formData.priority === 3}
                 />
@@ -387,14 +392,14 @@ export default function Home() {
           </div>
         ) : tasks.length > 0 ? (
           tasks.map((task) => {
-            // Mapear prioridade para valores amigáveis em ETH
+            // Mapear prioridade para valores em Wei
             const getAmountFromPriority = (priority: number): number => {
               switch (priority) {
-                case 0: return 0.1;   // fazer agora
-                case 1: return 0.05;  // agendar  
-                case 2: return 0.00001;  // delegar
-                case 3: return 0.001;  // eliminar
-                default: return 0.1;
+                case 0: return 100;  // Alta
+                case 1: return 50;   // Media  
+                case 2: return 25;   // Baixa
+                case 3: return 10;   // Muito baixa
+                default: return 100;
               }
             };
 

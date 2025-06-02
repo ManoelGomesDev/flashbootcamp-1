@@ -12,11 +12,11 @@ interface StakeCardProps {
 export function StakeCard({ option, stake, onSelect, selected = false }: StakeCardProps) {
     const getStakeValue = (option: string): string => {
         switch (option) {
-            case 'fazer agora': return '100000';
-            case 'agendar': return '50000';
-            case 'delegar': return '10000';
-            case 'eliminar': return '1000';
-            default: return '100000';
+            case 'alta': return '100';
+            case 'media': return '50';
+            case 'baixa': return '25';
+            case 'muito baixa': return '10';
+            default: return '100';
         }
     };
 
@@ -29,25 +29,25 @@ export function StakeCard({ option, stake, onSelect, selected = false }: StakeCa
         const baseClasses = "cursor-pointer flex flex-col items-center justify-center p-4 min-h-[100px] gap-2 rounded-lg border-2 transition-all duration-200 transform hover:scale-105";
         
         switch (option) {
-            case 'fazer agora':
+            case 'alta':
                 return `${baseClasses} text-red-600 ${
                     selected 
                         ? 'bg-red-100 border-red-400 shadow-lg' 
                         : 'bg-red-50 hover:bg-red-100 border-red-200 hover:border-red-300 hover:shadow-md'
                 }`;
-            case 'agendar':
+            case 'media':
                 return `${baseClasses} text-blue-600 ${
                     selected 
                         ? 'bg-blue-100 border-blue-400 shadow-lg' 
                         : 'bg-blue-50 hover:bg-blue-100 border-blue-200 hover:border-blue-300 hover:shadow-md'
                 }`;
-            case 'delegar':
+            case 'baixa':
                 return `${baseClasses} text-yellow-600 ${
                     selected 
                         ? 'bg-yellow-100 border-yellow-400 shadow-lg' 
                         : 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 hover:border-yellow-300 hover:shadow-md'
                 }`;
-            case 'eliminar':
+            case 'muito baixa':
                 return `${baseClasses} text-gray-600 ${
                     selected 
                         ? 'bg-gray-100 border-gray-400 shadow-lg' 
@@ -65,7 +65,7 @@ export function StakeCard({ option, stake, onSelect, selected = false }: StakeCa
         >
             <div className="text-center">
                 <p className="text-xs text-gray-500 mb-1">Stake:</p>
-                <p className="font-bold text-sm">{stake} ETH</p>
+                <p className="font-bold text-sm">{stake} Wei</p>
             </div>
             <div className="font-medium text-sm capitalize">
                 {option}

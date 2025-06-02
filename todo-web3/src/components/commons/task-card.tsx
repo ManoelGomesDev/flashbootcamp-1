@@ -11,7 +11,7 @@ interface TaskCardProps {
     amount: number;
     isCompleted?: boolean;
     onComplete?: () => void;
-    status?: 'fazer agora' | 'agendar' | 'concluído' | 'delegar';
+    status?: 'alta' | 'media' | 'baixa' | 'muito baixa' | 'concluído';
     walletConnected?: boolean;
 }
 
@@ -68,7 +68,7 @@ export function TaskCard({
                     <p className="text-sm text-muted-foreground">Vence em: {formattedDueDate}</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                    {amount ? `${amount} ETH` : '0 ETH'}
+                    {amount ? `${amount} Wei` : '0 Wei'}
                 </p>
             </CardFooter>
         </Card>
