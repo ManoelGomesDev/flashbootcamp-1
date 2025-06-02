@@ -124,7 +124,7 @@ export default function Home() {
 
   const handleCompleteTask = async (id: number) => {
     try {
-      if (!wallet.isClient || !wallet.isConnected) {
+      if (!canCreateTask()) {
         alert('Por favor, conecte sua carteira primeiro');
         return;
       }
@@ -133,6 +133,7 @@ export default function Home() {
       await loadTasks();
     } catch (error) {
       console.error('Error completing task:', error);
+      alert('Erro ao completar tarefa. Tente novamente.');
     }
   };
 
@@ -160,7 +161,7 @@ export default function Home() {
     // Mostrar botão padrão durante hidratação
     if (!wallet.isClient) {
       return (
-        <Button disabled>
+        <Button disabled className="cursor-pointer">
           <WalletIcon />
           Conectar Wallet
         </Button>
@@ -171,7 +172,7 @@ export default function Home() {
       return (
         <Button 
           onClick={() => window.open('https://metamask.io/', '_blank')}
-          className="bg-orange-500 hover:bg-orange-600"
+          className="bg-orange-500 hover:bg-orange-600 cursor-pointer"
         >
           <WalletIcon />
           Instalar MetaMask
@@ -191,8 +192,12 @@ export default function Home() {
     if (wallet.isConnected) {
       return (
         <Button 
-          onClick={wallet.disconnectWallet}
+          onClick={() => {
+            wallet.disconnectWallet();
+            alert('Carteira desconectada com sucesso!');
+          }}
           className="bg-green-500 hover:bg-green-600 gap-2"
+          title="Clique para desconectar a carteira"
         >
           <CheckIcon size={16} />
           <span className="font-mono text-sm">{wallet.formatAddress}</span>
@@ -209,6 +214,11 @@ export default function Home() {
     );
   };
 
+  // Função para verificar se pode criar tarefa
+  const canCreateTask = () => {
+    return wallet.isClient && wallet.isConnected && wallet.isMetaMaskInstalled;
+  };
+
   return (
     <div className="flex flex-col gap-4 max-w-7xl mx-auto pt-10">
       <div className="flex justify-between items-center">
@@ -218,6 +228,15 @@ export default function Home() {
         </div>
         {renderWalletButton()}
       </div>
+
+      {/* Aviso quando carteira não está conectada */}
+      {wallet.isClient && !wallet.isConnected && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <p className="text-yellow-700 text-sm">
+            ⚠️ Conecte sua carteira MetaMask para criar e gerenciar tarefas
+          </p>
+        </div>
+      )}
 
       {/* Status de conexão */}
       {wallet.isClient && wallet.isConnected && (
@@ -241,9 +260,10 @@ export default function Home() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
-              className="cursor-pointer" 
+              disabled={!canCreateTask()}
+              className={`cursor-pointer ${!canCreateTask() ? 'opacity-50 cursor-not-allowed' : ''}`} 
               onClick={() => {
-                if (!wallet.isClient || !wallet.isConnected) {
+                if (!canCreateTask()) {
                   alert('Por favor, conecte sua carteira primeiro');
                   return;
                 }
@@ -258,9 +278,13 @@ export default function Home() {
                   value: '100000'
                 });
               }}
+              title={!canCreateTask() ? 'Conecte sua carteira para criar tarefas' : 'Criar nova tarefa'}
             >
               <PlusIcon />
               Nova Tarefa
+              {!canCreateTask() && (
+                <span className="ml-2 text-xs opacity-70">(Carteira necessária)</span>
+              )}
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -354,6 +378,7 @@ export default function Home() {
                 onComplete={() => handleCompleteTask(task.id)}
                 createdAt={new Date().toLocaleDateString('pt-BR')}
                 amount={getAmountFromPriority(task.priority)}
+                walletConnected={canCreateTask()}
               />
             );
           })

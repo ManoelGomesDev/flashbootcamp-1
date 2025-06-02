@@ -12,6 +12,7 @@ interface TaskCardProps {
     isCompleted?: boolean;
     onComplete?: () => void;
     status?: 'fazer agora' | 'agendar' | 'concluído' | 'delegar';
+    walletConnected?: boolean;
 }
 
 export function TaskCard({ 
@@ -22,7 +23,8 @@ export function TaskCard({
     amount, 
     status,
     isCompleted,
-    onComplete 
+    onComplete,
+    walletConnected = true
 }: TaskCardProps) {
     const formattedDueDate = typeof dueDate === 'number' 
         ? new Date(dueDate * 1000).toLocaleDateString('pt-BR')
@@ -40,8 +42,17 @@ export function TaskCard({
 
                 <div className="flex flex-row gap-2">
                     {!isCompleted && (
-                        <Button variant="outline" onClick={onComplete} className="cursor-pointer">
+                        <Button 
+                            variant="outline" 
+                            onClick={onComplete} 
+                            disabled={!walletConnected}
+                            className={`cursor-pointer ${!walletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title={walletConnected ? 'Completar tarefa' : 'Conecte sua carteira para completar tarefas'}
+                        >
                             <CheckIcon />
+                            {!walletConnected && (
+                                <span className="ml-1 text-xs opacity-70">🔒</span>
+                            )}
                         </Button>
                     )}
                 </div>
