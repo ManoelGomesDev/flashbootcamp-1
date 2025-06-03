@@ -1,5 +1,7 @@
+// Indica que este é um componente do lado do cliente
 'use client'
 
+// Importações necessárias do React e bibliotecas relacionadas
 import { useState, useEffect } from 'react'
 import { getContract, createWalletClient, custom, Address } from 'viem'
 import { anvil } from 'viem/chains'
@@ -7,18 +9,27 @@ import { contractAbi, contractAddress } from '@/lib/abi'
 import { publicClient } from '@/lib/client'
 
 export default function Home() {
+  // Estados para gerenciar a conta do usuário e dados da tarefa
+  
+  // Endereço da carteira conectada
   const [account, setAccount] = useState<Address>()
+  // ID da tarefa para leitura/compleção
   const [taskId, setTaskId] = useState('0')
+  // Título da tarefa
   const [title, setTitle] = useState('Minha primeira task')
+  // Descrição da tarefa
   const [description, setDescription] = useState('Descrição da minha primeira task')
   const [dueDate, setDueDate] = useState(() => {
+    // Define a data de vencimento padrão para amanhã
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
     return tomorrow.toISOString().slice(0, 16)
   })
 
+  // Estado para armazenar o cliente da carteira
   const [walletClient, setWalletClient] = useState<any>(null)
 
+  // Efeito para inicializar o cliente da carteira quando o componente montar
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const client = createWalletClient({
@@ -29,25 +40,30 @@ export default function Home() {
     }
   }, [])
 
+  // Função para conectar a carteira do usuário
   const connectWallet = async () => {
     if (!walletClient) return
     const [address] = await walletClient.requestAddresses()
     setAccount(address)
   }
 
+  // Função para desconectar a carteira
   const disconnectWallet = () => {
     setAccount(undefined)
   }
 
+  // Inicializa o contrato com o endereço e ABI fornecidos
   const contract = getContract({
     address: contractAddress,
     abi: contractAbi,
     client: { public: publicClient, wallet: walletClient },
   })
 
+  // Função para criar uma nova tarefa
   const handleCreateTask = async () => {
     if (!account || !walletClient) return
     try {
+      // Log dos dados da tarefa que será criada
       console.log('Creating task with data:', {
         title,
         description,
@@ -55,6 +71,7 @@ export default function Home() {
         dueDateTimestamp: new Date(dueDate).getTime() / 1000
       })
 
+      // Simula a transação antes de executá-la
       const { request } = await publicClient.simulateContract({
         account,
         address: contractAddress,
@@ -64,15 +81,15 @@ export default function Home() {
       })
       
       console.log('Transaction simulated successfully, sending transaction...')
+      // Envia a transação para a blockchain
       const hash = await walletClient.writeContract(request)
       console.log('Task created with hash:', hash)
       
-      // Wait for the transaction to be mined
+      // Aguarda a confirmação da transação
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       console.log('Transaction receipt:', receipt)
       
-      // After successful creation, try to get the task
-      // We'll try to get task with ID 0 first
+      // Tenta recuperar a tarefa recém-criada
       console.log('Attempting to get task with ID: 0')
       try {
         const task = await contract.read.getTasks([BigInt(0)])
@@ -88,9 +105,11 @@ export default function Home() {
     }
   }
 
+  // Função para marcar uma tarefa como concluída
   const handleCompleteTask = async () => {
     if (!account || !walletClient || !taskId) return
     try {
+      // Simula a transação de conclusão
       const { request } = await publicClient.simulateContract({
         account,
         address: contractAddress,
@@ -98,6 +117,7 @@ export default function Home() {
         functionName: 'completeTask',
         args: [BigInt(taskId)]
       })
+      // Envia a transação para a blockchain
       const hash = await walletClient.writeContract(request)
       console.log('Task completed:', hash)
     } catch (error) {
@@ -105,22 +125,15 @@ export default function Home() {
     }
   }
 
+  // Função para recuperar os detalhes de uma tarefa
   const handleGetTask = async () => {
     if (!taskId) return
     try {
       console.log('Attempting to get task with ID:', taskId)
-      
-      // First verify if the contract is deployed and accessible
-      const code = await publicClient.getBytecode({ address: contractAddress })
-      if (!code || code === '0x') {
-        throw new Error('Contract not deployed at the specified address')
-      }
-      
-      // Try to get the task
       const task = await contract.read.getTasks([BigInt(taskId)])
       console.log('Task retrieved successfully:', task)
       
-      // Display task details in a more readable format
+      // Formata e exibe os detalhes da tarefa de forma mais legível
       if (task) {
         console.log('Task Details:', {
           id: task.id.toString(),
@@ -141,8 +154,10 @@ export default function Home() {
     }
   }
 
+  // Interface do usuário
   return (
     <div className="p-4 max-w-xl mx-auto">
+      {/* Seção de conexão da carteira */}
       <div className="mb-8">
         {!account ? (
           <button
@@ -161,6 +176,7 @@ export default function Home() {
         )}
       </div>
 
+      {/* Formulário de criação de tarefa */}
       {account && (
         <>
           <div className="mb-8 space-y-4">
@@ -193,6 +209,7 @@ export default function Home() {
             </button>
           </div>
 
+          {/* Seção de leitura e conclusão de tarefas */}
           <div className="mb-8 space-y-4">
             <h1>LEITURA</h1>
             <input
